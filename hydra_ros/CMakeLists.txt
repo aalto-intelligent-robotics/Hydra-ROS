@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 find_package(OpenCV REQUIRED COMPONENTS core imgproc)
+find_package(config_utilities REQUIRED)
 find_package(hydra REQUIRED)
 find_package(PCL REQUIRED COMPONENTS common)
 find_package(gflags REQUIRED)
@@ -56,7 +57,7 @@ catkin_package(
   visualization_msgs
   pose_graph_tools_ros
   pose_graph_tools_msgs
-  DEPENDS hydra PCL OpenCV
+  DEPENDS hydra config_utilities PCL OpenCV
   INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
 )

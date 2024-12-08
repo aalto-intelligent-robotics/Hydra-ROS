@@ -10,6 +10,7 @@
     <arg name="rgb_topic" default="rgb/image_raw"/>
     <arg name="depth_topic" default="depth_registered/image_rect"/>
     <arg name="label_topic" default="semantic/image_raw"/>
+    <arg name="masks_topic" default="masks"/>
     <arg name="enable_places" default="true"/>
     <arg name="rgb_image_transport" default="raw"/>
 
@@ -116,6 +117,7 @@
         <remap from="~rgb/camera_info" to="$(arg rgb_info_topic)"/>
         <remap from="~depth_registered/image_rect" to="$(arg depth_topic)"/>
         <remap from="~semantic/image_raw" to="$(arg label_topic)"/>
+        <remap from="~masks" to="$(arg masks_topic)"/>
         <!-- image transport -->
         <param name="rgb/image_transport" value="$(arg rgb_image_transport)"/>
 

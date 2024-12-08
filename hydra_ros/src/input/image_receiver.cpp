@@ -73,13 +73,15 @@ ImageReceiver::ImageReceiver(const Config& config, size_t sensor_id)
 
 bool ImageReceiver::initImpl() {
   // TODO(nathan) subscribe to image subsets
-  color_sub_ = ImageSubscriber(nh_, "rgb");
+  color_sub_ = ImageSubscriber(nh_, "rgb", "image_raw");
   depth_sub_ = ImageSubscriber(nh_, "depth_registered", "image_rect");
   label_sub_ = ImageSubscriber(nh_, "semantic");
+  masks_sub_.subscribe(nh_, "masks", 1);
   synchronizer_.reset(new Synchronizer(SyncPolicy(config.queue_size),
                                        *color_sub_.sub,
                                        *depth_sub_.sub,
-                                       *label_sub_.sub));
+                                       *label_sub_.sub,
+                                       masks_sub_));
   synchronizer_->registerCallback(&ImageReceiver::callback, this);
   return true;
 }
@@ -92,40 +94,57 @@ std::string showImageDim(const sensor_msgs::Image::ConstPtr& image) {
   return ss.str();
 }
 
-void ImageReceiver::callback(const sensor_msgs::Image::ConstPtr& color,
-                             const sensor_msgs::Image::ConstPtr& depth,
-                             const sensor_msgs::Image::ConstPtr& labels) {
-  if (color && (color->width != depth->width || color->height != depth->height)) {
+void ImageReceiver::callback(const sensor_msgs::Image::ConstPtr& color_msg,
+                             const sensor_msgs::Image::ConstPtr& depth_msg,
+                             const sensor_msgs::Image::ConstPtr& labels_msg,
+                             const hydra_stretch_msgs::Masks::ConstPtr& masks_msg) {
+  if (color_msg && (color_msg->width != depth_msg->width ||
+                    color_msg->height != depth_msg->height)) {
     LOG(ERROR) << "color dimensions do not match depth dimensions: "
-               << showImageDim(color) << " != " << showImageDim(depth);
+               << showImageDim(color_msg) << " != " << showImageDim(depth_msg);
     return;
   }
 
-  if (labels && (labels->width != depth->width || labels->height != depth->height)) {
+  if (labels_msg && (labels_msg->width != depth_msg->width ||
+                     labels_msg->height != depth_msg->height)) {
     LOG(ERROR) << "label dimensions do not match depth dimensions: "
-               << showImageDim(labels) << " != " << showImageDim(depth);
+               << showImageDim(labels_msg) << " != " << showImageDim(depth_msg);
     return;
   }
 
-  if (!checkInputTimestamp(depth->header.stamp.toNSec())) {
+  if (!checkInputTimestamp(depth_msg->header.stamp.toNSec())) {
     return;
   }
 
-  auto packet = std::make_shared<ImageInputPacket>(color->header.stamp.toNSec(), sensor_id_);
+  auto packet = std::make_shared<ImageInputPacket>(
+      color_msg->header.stamp.toNSec(), sensor_id_);
   try {
-    const auto cv_depth = cv_bridge::toCvShare(depth);
+    const auto cv_depth = cv_bridge::toCvShare(depth_msg);
     packet->depth = cv_depth->image.clone();
-    if (color && color->encoding == sensor_msgs::image_encodings::RGB8) {
-      auto cv_color = cv_bridge::toCvShare(color);
+    if (color_msg && color_msg->encoding == sensor_msgs::image_encodings::RGB8) {
+      auto cv_color = cv_bridge::toCvShare(color_msg);
       packet->color = cv_color->image.clone();
-    } else if (color) {
-      auto cv_color = cv_bridge::toCvCopy(color, sensor_msgs::image_encodings::RGB8);
+    } else if (color_msg) {
+      auto cv_color =
+          cv_bridge::toCvCopy(color_msg, sensor_msgs::image_encodings::RGB8);
       packet->color = cv_color->image;
     }
 
-    if (labels) {
-      auto cv_labels = cv_bridge::toCvShare(labels);
+    if (labels_msg) {
+      auto cv_labels = cv_bridge::toCvShare(labels_msg);
       packet->labels = cv_labels->image.clone();
+    }
+
+    if (masks_msg) {
+      for (auto& mask_msg : masks_msg->masks) {
+        auto cv_mask =
+            cv_bridge::toCvCopy(mask_msg.data, sensor_msgs::image_encodings::MONO8);
+        MaskData mask_data(mask_msg.class_id, cv_mask->image);
+        packet->instance_masks.push_back(mask_data);
+      }
+    }
+    else {
+      LOG(WARNING) << "No Masks registered\n";
     }
   } catch (const cv_bridge::Exception& e) {
     LOG(ERROR) << "unable to read images from ros: " << e.what();

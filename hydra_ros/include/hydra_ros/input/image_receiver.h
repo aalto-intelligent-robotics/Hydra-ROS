@@ -41,6 +41,7 @@
 #include <message_filters/sync_policies/approximate_time.h>
 #include <ros/ros.h>
 #include <sensor_msgs/Image.h>
+#include <hydra_stretch_msgs/Masks.h>
 
 namespace hydra {
 
@@ -58,8 +59,11 @@ struct ImageSubscriber {
 
 class ImageReceiver : public DataReceiver {
  public:
-  using SyncPolicy = message_filters::sync_policies::
-      ApproximateTime<sensor_msgs::Image, sensor_msgs::Image, sensor_msgs::Image>;
+  using SyncPolicy =
+      message_filters::sync_policies::ApproximateTime<sensor_msgs::Image,
+                                                      sensor_msgs::Image,
+                                                      sensor_msgs::Image,
+                                                      hydra_stretch_msgs::Masks>;
   using Synchronizer = message_filters::Synchronizer<SyncPolicy>;
 
   struct Config : DataReceiver::Config {
@@ -78,14 +82,16 @@ class ImageReceiver : public DataReceiver {
   bool initImpl() override;
 
  private:
-  void callback(const sensor_msgs::Image::ConstPtr& color,
-                const sensor_msgs::Image::ConstPtr& depth,
-                const sensor_msgs::Image::ConstPtr& labels);
+  void callback(const sensor_msgs::Image::ConstPtr& color_msg,
+                const sensor_msgs::Image::ConstPtr& depth_msg,
+                const sensor_msgs::Image::ConstPtr& labels_msg,
+                const hydra_stretch_msgs::Masks::ConstPtr& masks_msg);
 
   ros::NodeHandle nh_;
   ImageSubscriber color_sub_;
   ImageSubscriber depth_sub_;
   ImageSubscriber label_sub_;
+  message_filters::Subscriber<hydra_stretch_msgs::Masks> masks_sub_;
   std::unique_ptr<Synchronizer> synchronizer_;
 
   inline static const auto registration_ =
