@@ -37,6 +37,11 @@
 #include <config_utilities/config.h>
 #include <cv_bridge/cv_bridge.h>
 #include <glog/logging.h>
+#include <hydra_stretch_msgs/HydraVisionPacket.h>
+#include <hydra_stretch_msgs/Masks.h>
+#include <sensor_msgs/Image.h>
+
+#include <boost/smart_ptr/make_shared_object.hpp>
 
 namespace hydra {
 
@@ -73,16 +78,18 @@ ImageReceiver::ImageReceiver(const Config& config, size_t sensor_id)
 
 bool ImageReceiver::initImpl() {
   // TODO(nathan) subscribe to image subsets
-  color_sub_ = ImageSubscriber(nh_, "rgb", "image_raw");
-  depth_sub_ = ImageSubscriber(nh_, "depth_registered", "image_rect");
-  label_sub_ = ImageSubscriber(nh_, "semantic");
-  masks_sub_.subscribe(nh_, "masks", 1);
-  synchronizer_.reset(new Synchronizer(SyncPolicy(config.queue_size),
-                                       *color_sub_.sub,
-                                       *depth_sub_.sub,
-                                       *label_sub_.sub,
-                                       masks_sub_));
-  synchronizer_->registerCallback(&ImageReceiver::callback, this);
+  // color_sub_ = ImageSubscriber(nh_, "rgb", "image_raw");
+  // depth_sub_ = ImageSubscriber(nh_, "depth_registered", "image_rect");
+  // label_sub_ = ImageSubscriber(nh_, "semantic");
+  // masks_sub_.subscribe(nh_, "masks", 1);
+  // synchronizer_.reset(new Synchronizer(SyncPolicy(config.queue_size),
+  //                                      *color_sub_.sub,
+  //                                      *depth_sub_.sub,
+  //                                      *label_sub_.sub,
+  //                                      masks_sub_));
+  // synchronizer_->registerCallback(&ImageReceiver::callback, this);
+  vision_packet_sub_ = nh_.subscribe<hydra_stretch_msgs::HydraVisionPacket>(
+      "vision_packet", config.queue_size, &ImageReceiver::callback, this);
   return true;
 }
 
@@ -94,10 +101,20 @@ std::string showImageDim(const sensor_msgs::Image::ConstPtr& image) {
   return ss.str();
 }
 
-void ImageReceiver::callback(const sensor_msgs::Image::ConstPtr& color_msg,
-                             const sensor_msgs::Image::ConstPtr& depth_msg,
-                             const sensor_msgs::Image::ConstPtr& labels_msg,
-                             const hydra_stretch_msgs::Masks::ConstPtr& masks_msg) {
+void ImageReceiver::callback(
+    const hydra_stretch_msgs::HydraVisionPacket::ConstPtr& vision_packet_msg) {
+  const auto color_msg =
+      boost::make_shared<sensor_msgs::Image>(vision_packet_msg->color);
+
+  const auto depth_msg =
+      boost::make_shared<sensor_msgs::Image>(vision_packet_msg->depth);
+
+  const auto labels_msg =
+      boost::make_shared<sensor_msgs::Image>(vision_packet_msg->label);
+
+  const auto masks_msg =
+      boost::make_shared<hydra_stretch_msgs::Masks>(vision_packet_msg->masks);
+
   if (color_msg && (color_msg->width != depth_msg->width ||
                     color_msg->height != depth_msg->height)) {
     LOG(ERROR) << "color dimensions do not match depth dimensions: "
@@ -116,8 +133,8 @@ void ImageReceiver::callback(const sensor_msgs::Image::ConstPtr& color_msg,
     return;
   }
 
-  auto packet = std::make_shared<ImageInputPacket>(
-      color_msg->header.stamp.toNSec(), sensor_id_);
+  auto packet =
+      std::make_shared<ImageInputPacket>(color_msg->header.stamp.toNSec(), sensor_id_);
   try {
     const auto cv_depth = cv_bridge::toCvShare(depth_msg);
     packet->depth = cv_depth->image.clone();
@@ -139,11 +156,21 @@ void ImageReceiver::callback(const sensor_msgs::Image::ConstPtr& color_msg,
       for (auto& mask_msg : masks_msg->masks) {
         auto cv_mask =
             cv_bridge::toCvCopy(mask_msg.data, sensor_msgs::image_encodings::MONO8);
-        MaskData mask_data(mask_msg.class_id, cv_mask->image);
+        MaskData mask_data;
+        mask_data.class_id = mask_msg.class_id;
+        mask_data.mask = cv_mask->image;
+        // TEST:
+        VLOG(3) << "[ImageReceiver] Received mask data with class id: "
+                << mask_msg.class_id;
+        VLOG(3) << "[ImageReceiver] Registering mask data with class id: "
+                << mask_data.class_id;
+        VLOG(3) << "[ImageReceiver] Received mask data with mask size w: "
+                  << cv_mask->image.cols << " h: " << cv_mask->image.rows;
+        VLOG(3) << "[ImageReceiver] Registering mask data with mask size w: "
+                  << mask_data.mask.size().width << " h: " << mask_data.mask.rows;
         packet->instance_masks.push_back(mask_data);
       }
-    }
-    else {
+    } else {
       LOG(WARNING) << "No Masks registered\n";
     }
   } catch (const cv_bridge::Exception& e) {

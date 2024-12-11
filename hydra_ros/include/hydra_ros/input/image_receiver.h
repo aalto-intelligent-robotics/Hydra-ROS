@@ -35,13 +35,14 @@
 #pragma once
 #include <config_utilities/factory.h>
 #include <hydra/input/data_receiver.h>
+#include <hydra_stretch_msgs/HydraVisionPacket.h>
+#include <hydra_stretch_msgs/Masks.h>
 #include <image_transport/image_transport.h>
 #include <image_transport/subscriber_filter.h>
 #include <message_filters/subscriber.h>
 #include <message_filters/sync_policies/approximate_time.h>
 #include <ros/ros.h>
 #include <sensor_msgs/Image.h>
-#include <hydra_stretch_msgs/Masks.h>
 
 namespace hydra {
 
@@ -59,12 +60,12 @@ struct ImageSubscriber {
 
 class ImageReceiver : public DataReceiver {
  public:
-  using SyncPolicy =
-      message_filters::sync_policies::ApproximateTime<sensor_msgs::Image,
-                                                      sensor_msgs::Image,
-                                                      sensor_msgs::Image,
-                                                      hydra_stretch_msgs::Masks>;
-  using Synchronizer = message_filters::Synchronizer<SyncPolicy>;
+  // using SyncPolicy =
+  //     message_filters::sync_policies::ApproximateTime<sensor_msgs::Image,
+  //                                                     sensor_msgs::Image,
+  //                                                     sensor_msgs::Image,
+  //                                                     hydra_stretch_msgs::Masks>;
+  // using Synchronizer = message_filters::Synchronizer<SyncPolicy>;
 
   struct Config : DataReceiver::Config {
     std::string ns = "~";
@@ -82,17 +83,20 @@ class ImageReceiver : public DataReceiver {
   bool initImpl() override;
 
  private:
-  void callback(const sensor_msgs::Image::ConstPtr& color_msg,
-                const sensor_msgs::Image::ConstPtr& depth_msg,
-                const sensor_msgs::Image::ConstPtr& labels_msg,
-                const hydra_stretch_msgs::Masks::ConstPtr& masks_msg);
+  // void callback(const sensor_msgs::Image::ConstPtr& color_msg,
+  //               const sensor_msgs::Image::ConstPtr& depth_msg,
+  //               const sensor_msgs::Image::ConstPtr& labels_msg,
+  //               const hydra_stretch_msgs::Masks::ConstPtr& masks_msg);
+  void callback(
+      const hydra_stretch_msgs::HydraVisionPacket::ConstPtr& vision_packet_msg);
 
   ros::NodeHandle nh_;
   ImageSubscriber color_sub_;
   ImageSubscriber depth_sub_;
   ImageSubscriber label_sub_;
   message_filters::Subscriber<hydra_stretch_msgs::Masks> masks_sub_;
-  std::unique_ptr<Synchronizer> synchronizer_;
+  ros::Subscriber vision_packet_sub_;
+  // std::unique_ptr<S:nchronizer> synchronizer_;
 
   inline static const auto registration_ =
       config::RegistrationWithConfig<DataReceiver,
