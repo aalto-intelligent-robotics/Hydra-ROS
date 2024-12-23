@@ -110,14 +110,16 @@ void ImageReceiver::callback(
     return;
   }
 
-  if (masks_msg && (masks_msg->masks[0].data.width != depth_msg->width ||
-                    masks_msg->masks[0].data.height != depth_msg->height)) {
+  if (masks_msg->masks.size() > 0 &&
+      (masks_msg->masks[0].data.width != depth_msg->width ||
+       masks_msg->masks[0].data.height != depth_msg->height)) {
     LOG(ERROR) << "masks dimensions do not match depth dimensions: "
                << showMaskDim(masks_msg) << " != " << showImageDim(depth_msg);
     return;
   }
 
   if (!checkInputTimestamp(depth_msg->header.stamp.toNSec())) {
+    LOG(ERROR) << "fail check input stamp";
     return;
   }
 
@@ -144,11 +146,15 @@ void ImageReceiver::callback(
       for (auto& mask_msg : masks_msg->masks) {
         auto cv_mask =
             cv_bridge::toCvCopy(mask_msg.data, sensor_msgs::image_encodings::MONO8);
+        // TODO: Check if data could be received
         MaskData mask_data;
+        mask_data.local_id = mask_msg.local_id;
         mask_data.class_id = mask_msg.class_id;
         mask_data.mask = cv_mask->image;
         // NOTE: Check this part if something goes wrong (turn verbosity to 2),
         // sometimes the class id could not be received
+        LOG(INFO) << "[ImageReceiver] Received mask data with local id: "
+                << mask_msg.local_id;
         VLOG(2) << "[ImageReceiver] Received mask data with class id: "
                 << mask_msg.class_id;
         VLOG(2) << "[ImageReceiver] Registering mask data with class id: "
