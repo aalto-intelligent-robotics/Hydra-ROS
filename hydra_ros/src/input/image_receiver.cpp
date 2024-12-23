@@ -110,8 +110,9 @@ void ImageReceiver::callback(
     return;
   }
 
-  if (masks_msg && (masks_msg->masks[0].data.width != depth_msg->width ||
-                    masks_msg->masks[0].data.height != depth_msg->height)) {
+  if (masks_msg->masks.size() > 0 &&
+      (masks_msg->masks[0].data.width != depth_msg->width ||
+       masks_msg->masks[0].data.height != depth_msg->height)) {
     LOG(ERROR) << "masks dimensions do not match depth dimensions: "
                << showMaskDim(masks_msg) << " != " << showImageDim(depth_msg);
     return;
