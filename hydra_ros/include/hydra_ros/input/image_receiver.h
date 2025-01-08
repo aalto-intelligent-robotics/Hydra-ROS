@@ -51,6 +51,8 @@ class ImageReceiver : public DataReceiver {
   struct Config : DataReceiver::Config {
     std::string ns = "~";
     size_t queue_size = 10;
+    //! TEST: Skipping the first 10 frames to localize
+    int skip_frame = 10;
   };
 
   ImageReceiver(const Config& config, size_t sensor_id);
@@ -64,6 +66,7 @@ class ImageReceiver : public DataReceiver {
   bool initImpl() override;
 
  private:
+  int frame_cnt = 0;
   /**
    * @brief callback function to extract information from HydraVisionPacket
    *

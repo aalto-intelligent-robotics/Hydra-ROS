@@ -57,6 +57,7 @@ void declare_config(ImageReceiver::Config& config) {
   base<DataReceiver::Config>(config);
   field(config.ns, "ns");
   field(config.queue_size, "queue_size");
+  field(config.skip_frame, "skip_frame");
 }
 
 ImageReceiver::ImageReceiver(const Config& config, size_t sensor_id)
@@ -84,88 +85,92 @@ std::string showMaskDim(const hydra_stretch_msgs::Masks::ConstPtr& masks) {
 
 void ImageReceiver::callback(
     const hydra_stretch_msgs::HydraVisionPacket::ConstPtr& vision_packet_msg) {
-  const auto color_msg =
-      boost::make_shared<sensor_msgs::Image>(vision_packet_msg->color);
+  if (frame_cnt++ > config.skip_frame) {
+    const auto color_msg =
+        boost::make_shared<sensor_msgs::Image>(vision_packet_msg->color);
 
-  const auto depth_msg =
-      boost::make_shared<sensor_msgs::Image>(vision_packet_msg->depth);
+    const auto depth_msg =
+        boost::make_shared<sensor_msgs::Image>(vision_packet_msg->depth);
 
-  const auto labels_msg =
-      boost::make_shared<sensor_msgs::Image>(vision_packet_msg->label);
+    const auto labels_msg =
+        boost::make_shared<sensor_msgs::Image>(vision_packet_msg->label);
 
-  const auto masks_msg =
-      boost::make_shared<hydra_stretch_msgs::Masks>(vision_packet_msg->masks);
+    const auto masks_msg =
+        boost::make_shared<hydra_stretch_msgs::Masks>(vision_packet_msg->masks);
 
-  if (color_msg && (color_msg->width != depth_msg->width ||
-                    color_msg->height != depth_msg->height)) {
-    LOG(ERROR) << "color dimensions do not match depth dimensions: "
-               << showImageDim(color_msg) << " != " << showImageDim(depth_msg);
-    return;
-  }
-
-  if (labels_msg && (labels_msg->width != depth_msg->width ||
-                     labels_msg->height != depth_msg->height)) {
-    LOG(ERROR) << "label dimensions do not match depth dimensions: "
-               << showImageDim(labels_msg) << " != " << showImageDim(depth_msg);
-    return;
-  }
-
-  if (masks_msg->masks.size() > 0 &&
-      (masks_msg->masks[0].data.width != depth_msg->width ||
-       masks_msg->masks[0].data.height != depth_msg->height)) {
-    LOG(ERROR) << "masks dimensions do not match depth dimensions: "
-               << showMaskDim(masks_msg) << " != " << showImageDim(depth_msg);
-    return;
-  }
-
-  if (!checkInputTimestamp(depth_msg->header.stamp.toNSec())) {
-    return;
-  }
-
-  auto packet =
-      std::make_shared<ImageInputPacket>(color_msg->header.stamp.toNSec(), sensor_id_);
-  try {
-    const auto cv_depth = cv_bridge::toCvShare(depth_msg);
-    packet->depth = cv_depth->image.clone();
-    if (color_msg && color_msg->encoding == sensor_msgs::image_encodings::RGB8) {
-      auto cv_color = cv_bridge::toCvShare(color_msg);
-      packet->color = cv_color->image.clone();
-    } else if (color_msg) {
-      auto cv_color =
-          cv_bridge::toCvCopy(color_msg, sensor_msgs::image_encodings::RGB8);
-      packet->color = cv_color->image;
+    if (color_msg && (color_msg->width != depth_msg->width ||
+                      color_msg->height != depth_msg->height)) {
+      LOG(ERROR) << "color dimensions do not match depth dimensions: "
+                 << showImageDim(color_msg) << " != " << showImageDim(depth_msg);
+      return;
     }
 
-    if (labels_msg) {
-      auto cv_labels = cv_bridge::toCvShare(labels_msg);
-      packet->labels = cv_labels->image.clone();
+    if (labels_msg && (labels_msg->width != depth_msg->width ||
+                       labels_msg->height != depth_msg->height)) {
+      LOG(ERROR) << "label dimensions do not match depth dimensions: "
+                 << showImageDim(labels_msg) << " != " << showImageDim(depth_msg);
+      return;
     }
 
-    if (masks_msg) {
-      for (auto& mask_msg : masks_msg->masks) {
-        auto cv_mask =
-            cv_bridge::toCvCopy(mask_msg.data, sensor_msgs::image_encodings::MONO8);
-        MaskData mask_data;
-        mask_data.class_id = mask_msg.class_id;
-        mask_data.mask = cv_mask->image;
-        // NOTE: Check this part if something goes wrong (turn verbosity to 2),
-        // sometimes the class id could not be received
-        VLOG(2) << "[ImageReceiver] Received mask data with class id: "
-                << mask_msg.class_id;
-        VLOG(2) << "[ImageReceiver] Registering mask data with class id: "
-                << mask_data.class_id;
-        VLOG(2) << "[ImageReceiver] Received mask data with mask size w: "
-                << cv_mask->image.cols << " h: " << cv_mask->image.rows;
-        VLOG(2) << "[ImageReceiver] Registering mask data with mask size w: "
-                << mask_data.mask.size().width << " h: " << mask_data.mask.rows;
-        packet->instance_masks.push_back(mask_data);
+    if (masks_msg->masks.size() > 0 &&
+        (masks_msg->masks[0].data.width != depth_msg->width ||
+         masks_msg->masks[0].data.height != depth_msg->height)) {
+      LOG(ERROR) << "masks dimensions do not match depth dimensions: "
+                 << showMaskDim(masks_msg) << " != " << showImageDim(depth_msg);
+      return;
+    }
+
+    if (!checkInputTimestamp(depth_msg->header.stamp.toNSec())) {
+      return;
+    }
+
+    auto packet = std::make_shared<ImageInputPacket>(color_msg->header.stamp.toNSec(),
+                                                     sensor_id_);
+    try {
+      const auto cv_depth = cv_bridge::toCvShare(depth_msg);
+      packet->depth = cv_depth->image.clone();
+      if (color_msg && color_msg->encoding == sensor_msgs::image_encodings::RGB8) {
+        auto cv_color = cv_bridge::toCvShare(color_msg);
+        packet->color = cv_color->image.clone();
+      } else if (color_msg) {
+        auto cv_color =
+            cv_bridge::toCvCopy(color_msg, sensor_msgs::image_encodings::RGB8);
+        packet->color = cv_color->image;
       }
-    }
-  } catch (const cv_bridge::Exception& e) {
-    LOG(ERROR) << "unable to read images from ros: " << e.what();
-  }
 
-  queue.push(packet);
+      if (labels_msg) {
+        auto cv_labels = cv_bridge::toCvShare(labels_msg);
+        packet->labels = cv_labels->image.clone();
+      }
+
+      if (masks_msg) {
+        for (auto& mask_msg : masks_msg->masks) {
+          auto cv_mask =
+              cv_bridge::toCvCopy(mask_msg.data, sensor_msgs::image_encodings::MONO8);
+          MaskData mask_data;
+          mask_data.class_id = mask_msg.class_id;
+          mask_data.mask = cv_mask->image;
+          // NOTE: Check this part if something goes wrong (turn verbosity to 2),
+          // sometimes the class id could not be received
+          VLOG(2) << "[ImageReceiver] Received mask data with class id: "
+                  << mask_msg.class_id;
+          VLOG(2) << "[ImageReceiver] Registering mask data with class id: "
+                  << mask_data.class_id;
+          VLOG(2) << "[ImageReceiver] Received mask data with mask size w: "
+                  << cv_mask->image.cols << " h: " << cv_mask->image.rows;
+          VLOG(2) << "[ImageReceiver] Registering mask data with mask size w: "
+                  << mask_data.mask.size().width << " h: " << mask_data.mask.rows;
+          packet->instance_masks.push_back(mask_data);
+        }
+      }
+    } catch (const cv_bridge::Exception& e) {
+      LOG(ERROR) << "unable to read images from ros: " << e.what();
+    }
+    queue.push(packet);
+  }
+  else {
+    LOG(INFO) << "Skipping frame " << frame_cnt;
+  }
 }
 
 }  // namespace hydra
