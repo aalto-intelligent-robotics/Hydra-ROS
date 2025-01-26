@@ -38,11 +38,13 @@
 #include <config_utilities/parsing/ros.h>
 #include <config_utilities/printing.h>
 #include <config_utilities/validation.h>
+#include <glog/logging.h>
 #include <hydra/backend/backend_module.h>
 #include <hydra/backend/update_frontiers_functor.h>
 #include <hydra/backend/update_surface_places_functor.h>
 #include <hydra/common/dsg_types.h>
 #include <hydra/common/global_info.h>
+#include <hydra/common/hydra_pipeline.h>
 #include <hydra/frontend/frontend_module.h>
 #include <hydra/loop_closure/loop_closure_module.h>
 #include <hydra/reconstruction/reconstruction_module.h>
@@ -84,6 +86,16 @@ void HydraRosPipeline::init() {
   const auto reconstruction = getModule<ReconstructionModule>("reconstruction");
   CHECK(reconstruction);
   input_module_.reset(new RosInputModule(config_.input, reconstruction->queue()));
+  // TEST: Add save graph server
+  save_graph_server_ = nh_.advertiseService("save_graph", &HydraRosPipeline::save_graph, this);
+}
+
+bool HydraRosPipeline::save_graph(hydra_msgs::SaveGraphRequest& req,
+                                  hydra_msgs::SaveGraphResponse& res) {
+  LOG(INFO) << "Saving Graph now";
+  save();
+  LOG(INFO) << "Graph saved";
+  return true;
 }
 
 void HydraRosPipeline::initFrontend() {
