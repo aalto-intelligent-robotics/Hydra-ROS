@@ -49,6 +49,7 @@
 #include <hydra/loop_closure/loop_closure_module.h>
 #include <hydra/reconstruction/reconstruction_module.h>
 #include <pose_graph_tools_ros/conversions.h>
+#include <std_srvs/Empty.h>
 
 #include <memory>
 
@@ -86,12 +87,12 @@ void HydraRosPipeline::init() {
   const auto reconstruction = getModule<ReconstructionModule>("reconstruction");
   CHECK(reconstruction);
   input_module_.reset(new RosInputModule(config_.input, reconstruction->queue()));
-  // TEST: Add save graph server
-  save_graph_server_ = nh_.advertiseService("save_graph", &HydraRosPipeline::save_graph, this);
+  save_graph_server_ =
+      nh_.advertiseService("save_graph", &HydraRosPipeline::save_graph, this);
 }
 
-bool HydraRosPipeline::save_graph(hydra_msgs::SaveGraphRequest& req,
-                                  hydra_msgs::SaveGraphResponse& res) {
+bool HydraRosPipeline::save_graph(std_srvs::Empty::Request&,
+                                  std_srvs::Empty::Response&) {
   LOG(INFO) << "Saving Graph now";
   save();
   LOG(INFO) << "Graph saved";

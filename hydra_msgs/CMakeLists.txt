@@ -4,7 +4,7 @@ project(hydra_msgs)
 find_package(catkin REQUIRED COMPONENTS std_msgs message_generation)
 
 add_message_files(FILES ActiveLayer.msg DsgUpdate.msg)
-add_service_files(FILES GetDsg.srv QueryFreespace.srv SaveGraph.srv)
+add_service_files(FILES GetDsg.srv QueryFreespace.srv)
 
 generate_messages(DEPENDENCIES std_msgs)
 

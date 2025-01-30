@@ -167,8 +167,7 @@ void ImageReceiver::callback(
       LOG(ERROR) << "unable to read images from ros: " << e.what();
     }
     queue.push(packet);
-  }
-  else {
+  } else {
     LOG(INFO) << "Skipping frame " << frame_cnt;
   }
 }

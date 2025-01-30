@@ -34,11 +34,9 @@
  * -------------------------------------------------------------------------- */
 #pragma once
 #include <hydra/common/hydra_pipeline.h>
-#include <hydra_msgs/SaveGraph.h>
+#include <std_srvs/Empty.h>
 #include <ros/ros.h>
 
-#include "hydra_msgs/SaveGraphRequest.h"
-#include "hydra_msgs/SaveGraphResponse.h"
 #include "hydra_ros/input/ros_input_module.h"
 
 namespace hydra {
@@ -60,8 +58,8 @@ class HydraRosPipeline : public HydraPipeline {
 
   void init() override;
 
-  virtual bool save_graph(hydra_msgs::SaveGraphRequest& req,
-                          hydra_msgs::SaveGraphResponse& res);
+  virtual bool save_graph(std_srvs::Empty::Request& req,
+                          std_srvs::Empty::Response& res);
 
  protected:
   virtual void initFrontend();
