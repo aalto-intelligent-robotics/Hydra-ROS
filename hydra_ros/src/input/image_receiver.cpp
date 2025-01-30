@@ -86,6 +86,8 @@ std::string showMaskDim(const hydra_stretch_msgs::Masks::ConstPtr& masks) {
 void ImageReceiver::callback(
     const hydra_stretch_msgs::HydraVisionPacket::ConstPtr& vision_packet_msg) {
   if (frame_cnt++ > config.skip_frame) {
+    const uint64 map_view_id = vision_packet_msg->map_view_id;
+
     const auto color_msg =
         boost::make_shared<sensor_msgs::Image>(vision_packet_msg->color);
 
@@ -148,6 +150,7 @@ void ImageReceiver::callback(
           auto cv_mask =
               cv_bridge::toCvCopy(mask_msg.data, sensor_msgs::image_encodings::MONO8);
           MaskData mask_data;
+          mask_data.map_view_id = map_view_id;
           mask_data.class_id = mask_msg.class_id;
           mask_data.mask = cv_mask->image;
           // NOTE: Check this part if something goes wrong (turn verbosity to 2),
