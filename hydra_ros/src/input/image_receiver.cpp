@@ -145,6 +145,7 @@ void ImageReceiver::callback(
         packet->labels = cv_labels->image.clone();
       }
 
+      packet->map_view_id = map_view_id;
       if (masks_msg) {
         for (auto& mask_msg : masks_msg->masks) {
           auto cv_mask =
