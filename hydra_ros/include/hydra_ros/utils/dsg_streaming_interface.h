@@ -35,6 +35,9 @@
 #pragma once
 #include <hydra/common/dsg_types.h>
 #include <hydra_msgs/DsgUpdate.h>
+#include <hydra_stretch_msgs/ObjectNodeInfo.h>
+#include <hydra_stretch_msgs/ObjectLayerInfo.h>
+#include <hydra_stretch_msgs/InstanceViewHeader.h>
 #include <kimera_pgmo_msgs/KimeraPgmoMesh.h>
 #include <ros/ros.h>
 
@@ -59,6 +62,8 @@ class DsgSender {
 
   ros::Publisher pub_;
   ros::Publisher mesh_pub_;
+  //! TEST: Publish object node info for change detection
+  ros::Publisher object_pub_;
   mutable std::optional<uint64_t> last_mesh_time_ns_;
 
   std::string timer_name_;

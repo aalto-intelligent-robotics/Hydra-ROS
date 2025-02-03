@@ -17,6 +17,7 @@ find_package(
              dynamic_reconfigure
              geometry_msgs
              hydra_msgs
+             hydra_stretch_msgs
              image_transport
              kimera_pgmo_ros
              kimera_pgmo_msgs
@@ -46,6 +47,7 @@ catkin_package(
   dynamic_reconfigure
   geometry_msgs
   hydra_msgs
+  hydra_stretch_msgs
   image_transport
   kimera_pgmo_ros
   kimera_pgmo_msgs
@@ -57,7 +59,10 @@ catkin_package(
   visualization_msgs
   pose_graph_tools_ros
   pose_graph_tools_msgs
-  DEPENDS hydra config_utilities PCL OpenCV
+  DEPENDS hydra
+          config_utilities
+          PCL
+          OpenCV
   INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
 )

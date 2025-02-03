@@ -34,6 +34,7 @@
  * -------------------------------------------------------------------------- */
 #include "hydra_ros/utils/dsg_streaming_interface.h"
 
+#include <Eigen/src/Core/Matrix.h>
 #include <glog/logging.h>
 #include <hydra/common/dsg_types.h>
 #include <hydra/utils/display_utilities.h>
@@ -41,6 +42,7 @@
 #include <hydra/utils/timing_utilities.h>
 #include <kimera_pgmo/utils/common_functions.h>
 #include <kimera_pgmo_ros/conversion/ros_conversion.h>
+#include <spark_dsg/node_attributes.h>
 #include <spark_dsg/serialization/graph_binary_serialization.h>
 
 namespace hydra {
@@ -58,6 +60,7 @@ DsgSender::DsgSender(const ros::NodeHandle& nh,
       min_mesh_separation_s_(min_mesh_separation_s),
       serialize_dsg_mesh_(serialize_dsg_mesh) {
   pub_ = nh_.advertise<hydra_msgs::DsgUpdate>("dsg", 1);
+  object_pub_ = nh_.advertise<hydra_stretch_msgs::ObjectLayerInfo>("object_nodes", 1);
   if (publish_mesh_) {
     mesh_pub_ = nh_.advertise<kimera_pgmo_msgs::KimeraPgmoMesh>("dsg_mesh", 1, false);
   }
@@ -75,6 +78,36 @@ void DsgSender::sendGraph(const DynamicSceneGraph& graph,
     msg.full_update = true;
     pub_.publish(msg);
   }
+
+  //! TEST: Publish node information
+  hydra_stretch_msgs::ObjectLayerInfo all_objects_nodes_msg;
+  for (const auto& node : graph.getLayer(DsgLayers::OBJECTS).nodes()) {
+    hydra_stretch_msgs::ObjectNodeInfo object_node_msg;
+
+    object_node_msg.node_id = node.first;
+
+    const ObjectNodeAttributes& node_attrs =
+        node.second->attributes<ObjectNodeAttributes>();
+
+    const Eigen::Vector3f& bbox_dims = node_attrs.bounding_box.dimensions;
+    const Eigen::Vector3f& world_P_center = node_attrs.bounding_box.world_P_center;
+    object_node_msg.name = node_attrs.name;
+    object_node_msg.bounding_box.dimensions = {
+        bbox_dims.x(), bbox_dims.y(), bbox_dims.z()};
+    object_node_msg.bounding_box.world_P_center = {
+        world_P_center.x(), world_P_center.y(), world_P_center.z()};
+    object_node_msg.class_id = node_attrs.semantic_label;
+    object_node_msg.position = {node_attrs.position.x(), node_attrs.position.y(), node_attrs.position.z()};
+    hydra_stretch_msgs::InstanceViewHeader instance_view_header;
+    for (const auto& view : node_attrs.instance_views.id_to_instance_masks_) {
+      instance_view_header.map_view_id = view.first;
+      instance_view_header.mask_id = view.second.mask_id_;
+      object_node_msg.instance_view_headers.push_back(instance_view_header);
+    }
+
+    all_objects_nodes_msg.nodes.push_back(object_node_msg);
+  }
+  object_pub_.publish(all_objects_nodes_msg);
 
   if (!publish_mesh_ || !mesh_pub_.getNumSubscribers()) {
     return;
