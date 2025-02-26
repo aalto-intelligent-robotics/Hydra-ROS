@@ -3,7 +3,18 @@ project(hydra_msgs)
 
 find_package(catkin REQUIRED COMPONENTS std_msgs message_generation)
 
-add_message_files(FILES ActiveLayer.msg DsgUpdate.msg)
+add_message_files(
+  FILES
+  ActiveLayer.msg
+  DsgUpdate.msg
+  Mask.msg
+  Masks.msg
+  HydraVisionPacket.msg
+  AABB.msg
+  InstanceViewHeader.msg
+  ObjectLayerInfo.msg
+  ObjectNodeInfo.msg
+)
 add_service_files(FILES GetDsg.srv QueryFreespace.srv)
 
 generate_messages(DEPENDENCIES std_msgs)
