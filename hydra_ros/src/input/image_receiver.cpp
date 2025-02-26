@@ -155,8 +155,6 @@ void ImageReceiver::callback(
           mask_data.mask_id = mask_msg.mask_id;
           mask_data.class_id = mask_msg.class_id;
           mask_data.mask = cv_mask->image;
-          // NOTE: Check this part if something goes wrong (turn verbosity to 2),
-          // sometimes the class id could not be received
           VLOG(2) << "[ImageReceiver] Received mask data with class id: "
                   << mask_msg.class_id;
           VLOG(2) << "[ImageReceiver] Registering mask data with class id: "
