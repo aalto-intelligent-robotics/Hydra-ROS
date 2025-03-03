@@ -60,7 +60,7 @@ DsgSender::DsgSender(const ros::NodeHandle& nh,
       min_mesh_separation_s_(min_mesh_separation_s),
       serialize_dsg_mesh_(serialize_dsg_mesh) {
   pub_ = nh_.advertise<hydra_msgs::DsgUpdate>("dsg", 1);
-  object_pub_ = nh_.advertise<hydra_stretch_msgs::ObjectLayerInfo>("object_nodes", 1);
+  object_pub_ = nh_.advertise<hydra_msgs::ObjectLayerInfo>("object_nodes", 1);
   if (publish_mesh_) {
     mesh_pub_ = nh_.advertise<kimera_pgmo_msgs::KimeraPgmoMesh>("dsg_mesh", 1, false);
   }
@@ -80,9 +80,9 @@ void DsgSender::sendGraph(const DynamicSceneGraph& graph,
   }
 
   //! TEST: Publish node information
-  hydra_stretch_msgs::ObjectLayerInfo all_objects_nodes_msg;
+  hydra_msgs::ObjectLayerInfo all_objects_nodes_msg;
   for (const auto& node : graph.getLayer(DsgLayers::OBJECTS).nodes()) {
-    hydra_stretch_msgs::ObjectNodeInfo object_node_msg;
+    hydra_msgs::ObjectNodeInfo object_node_msg;
 
     object_node_msg.node_id = node.first;
 
@@ -98,7 +98,7 @@ void DsgSender::sendGraph(const DynamicSceneGraph& graph,
         world_P_center.x(), world_P_center.y(), world_P_center.z()};
     object_node_msg.class_id = node_attrs.semantic_label;
     object_node_msg.position = {node_attrs.position.x(), node_attrs.position.y(), node_attrs.position.z()};
-    hydra_stretch_msgs::InstanceViewHeader instance_view_header;
+    hydra_msgs::InstanceViewHeader instance_view_header;
     for (const auto& view : node_attrs.instance_views.id_to_instance_masks_) {
       instance_view_header.map_view_id = view.first;
       instance_view_header.mask_id = view.second.mask_id_;

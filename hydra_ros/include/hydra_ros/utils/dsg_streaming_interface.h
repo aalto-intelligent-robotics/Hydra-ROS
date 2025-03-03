@@ -35,9 +35,9 @@
 #pragma once
 #include <hydra/common/dsg_types.h>
 #include <hydra_msgs/DsgUpdate.h>
-#include <hydra_stretch_msgs/ObjectNodeInfo.h>
-#include <hydra_stretch_msgs/ObjectLayerInfo.h>
-#include <hydra_stretch_msgs/InstanceViewHeader.h>
+#include <hydra_msgs/ObjectNodeInfo.h>
+#include <hydra_msgs/ObjectLayerInfo.h>
+#include <hydra_msgs/InstanceViewHeader.h>
 #include <kimera_pgmo_msgs/KimeraPgmoMesh.h>
 #include <ros/ros.h>
 

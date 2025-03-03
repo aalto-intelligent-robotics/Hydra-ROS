@@ -35,8 +35,8 @@
 #pragma once
 #include <config_utilities/factory.h>
 #include <hydra/input/data_receiver.h>
-#include <hydra_stretch_msgs/HydraVisionPacket.h>
-#include <hydra_stretch_msgs/Masks.h>
+#include <hydra_msgs/HydraVisionPacket.h>
+#include <hydra_msgs/Masks.h>
 #include <image_transport/image_transport.h>
 #include <image_transport/subscriber_filter.h>
 #include <message_filters/subscriber.h>
@@ -74,7 +74,7 @@ class ImageReceiver : public DataReceiver {
    * masks}.
    */
   void callback(
-      const hydra_stretch_msgs::HydraVisionPacket::ConstPtr& vision_packet_msg);
+      const hydra_msgs::HydraVisionPacket::ConstPtr& vision_packet_msg);
 
   ros::NodeHandle nh_;
 

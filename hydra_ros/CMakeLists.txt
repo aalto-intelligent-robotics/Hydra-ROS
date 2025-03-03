@@ -17,7 +17,6 @@ find_package(
              dynamic_reconfigure
              geometry_msgs
              hydra_msgs
-             hydra_stretch_msgs
              image_transport
              kimera_pgmo_ros
              kimera_pgmo_msgs
@@ -47,7 +46,6 @@ catkin_package(
   dynamic_reconfigure
   geometry_msgs
   hydra_msgs
-  hydra_stretch_msgs
   image_transport
   kimera_pgmo_ros
   kimera_pgmo_msgs

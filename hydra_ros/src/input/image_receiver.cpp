@@ -37,8 +37,8 @@
 #include <config_utilities/config.h>
 #include <cv_bridge/cv_bridge.h>
 #include <glog/logging.h>
-#include <hydra_stretch_msgs/HydraVisionPacket.h>
-#include <hydra_stretch_msgs/Masks.h>
+#include <hydra_msgs/HydraVisionPacket.h>
+#include <hydra_msgs/Masks.h>
 #include <sensor_msgs/Image.h>
 
 #include <boost/smart_ptr/make_shared_object.hpp>
@@ -64,7 +64,7 @@ ImageReceiver::ImageReceiver(const Config& config, size_t sensor_id)
     : DataReceiver(config, sensor_id), config(config), nh_(config.ns) {}
 
 bool ImageReceiver::initImpl() {
-  vision_packet_sub_ = nh_.subscribe<hydra_stretch_msgs::HydraVisionPacket>(
+  vision_packet_sub_ = nh_.subscribe<hydra_msgs::HydraVisionPacket>(
       "vision_packet", config.queue_size, &ImageReceiver::callback, this);
   return true;
 }
@@ -77,14 +77,14 @@ std::string showImageDim(const sensor_msgs::Image::ConstPtr& image) {
   return ss.str();
 }
 
-std::string showMaskDim(const hydra_stretch_msgs::Masks::ConstPtr& masks) {
+std::string showMaskDim(const hydra_msgs::Masks::ConstPtr& masks) {
   std::stringstream ss;
   ss << "[" << masks->masks[0].data.width << ", " << masks->masks[0].data.height << "]";
   return ss.str();
 }
 
 void ImageReceiver::callback(
-    const hydra_stretch_msgs::HydraVisionPacket::ConstPtr& vision_packet_msg) {
+    const hydra_msgs::HydraVisionPacket::ConstPtr& vision_packet_msg) {
   if (frame_cnt++ > config.skip_frame) {
     const uint64 map_view_id = vision_packet_msg->map_view_id;
     
@@ -98,7 +98,7 @@ void ImageReceiver::callback(
         boost::make_shared<sensor_msgs::Image>(vision_packet_msg->label);
 
     const auto masks_msg =
-        boost::make_shared<hydra_stretch_msgs::Masks>(vision_packet_msg->masks);
+        boost::make_shared<hydra_msgs::Masks>(vision_packet_msg->masks);
 
     if (color_msg && (color_msg->width != depth_msg->width ||
                       color_msg->height != depth_msg->height)) {

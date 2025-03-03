@@ -3,4 +3,4 @@ uint64 map_view_id
 sensor_msgs/Image color
 sensor_msgs/Image depth
 sensor_msgs/Image label
-hydra_stretch_msgs/Masks masks
+Masks masks
