@@ -1,5 +1,8 @@
 ## Hydra-ROS
 
+> **Note**<br>
+> This is our fork for the original Hydra-ROS project from [here](https://github.com/MIT-SPARK/Hydra-ROS) to enable our project [REACT](https://github.com/aalto-intelligent-robotics/REACT).
+
 This repository contains the ROS interface for [Hydra](https://github.com/MIT-SPARK/Hydra) and is based on the follwoing papers:
   - ["Hydra: A Real-time Spatial Perception System for 3D Scene Graph Construction and Optimization"](http://www.roboticsproceedings.org/rss18/p050.pdf)
   - ["Foundations of Spatial Perception for Robotics: Hierarchical Representations and Real-time Systems"](https://arxiv.org/abs/2305.07154)
